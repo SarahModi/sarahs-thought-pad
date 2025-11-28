@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>This is Sarah's Thought Pad</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
+        textarea { width: 100%; margin: 10px 0; }
+        button { padding: 10px 20px; background: #0073bb; color: white; border: none; cursor: pointer; }
+        #message { margin: 10px 0; padding: 10px; border-radius: 4px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Welcome to My Cloud Thought Pad People!</h1>
+    <p>This is running on <strong>Amazon S3 + Lambda + API Gateway + DynamoDB</strong> - And guess what... its completely serverless :D</p>
+    
+    <div>
+        <h3>Dont be shy to add a thought:</h3>
+        <textarea id="thoughtText" rows="4" cols="50" placeholder="What's on your mind?"></textarea>
+        <br>
+        <button onclick="saveThought()">Save Thought to Cloud</button>
+    </div>
+
+    <div id="message"></div>
+
+    <script>
+        // Make sure this is your actual API Gateway URL
+        const API_URL = 'https://n02zwwj3l2.execute-api.us-east-1.amazonaws.com/prod/thoughts';
+
+        function saveThought() {
+            const thought = document.getElementById('thoughtText').value;
+            const messageDiv = document.getElementById('message');
+            
+            if (!thought) {
+                showMessage('Please enter a thought!', 'error');
+                return;
+            }
+
+            // Call our Lambda function via API Gateway
+            fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ thought: thought })
+            })
+            .then(response => response.json())
+            .then(data => {
+                showMessage('Thought saved to the cloud!', 'success');
+                document.getElementById('thoughtText').value = ''; // Clear input
+            })
+            .catch(error => {
+                showMessage('Error saving thought: ' + error, 'error');
+            });
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = type;
+            messageDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
