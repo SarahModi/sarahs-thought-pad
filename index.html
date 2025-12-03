@@ -12,8 +12,9 @@
     </style>
 </head>
 <body>
-    <h1>Welcome to My Cloud Thought Pad People!</h1>
+    <h1>Welcome to My Cloud Thought Pad People! - V1 RESTORED </h1>
     <p>This is running on <strong>Amazon S3 + Lambda + API Gateway + DynamoDB</strong> - completely serverless!</p>
+    <p><em>Back to basics: Simple, reliable thought saving</em></p>
     
     <div>
         <h3>Add a Thought:</h3>
@@ -25,9 +26,8 @@
     <div id="message"></div>
 
     <script>
-        // V1 API URL (use your OLD working URL if you have it)
-        // If not, we'll use the current one - the Lambda will handle it
-        const API_URL = 'https://n02zwwj3l2.execute-api.us-east-1.amazonaws.com/prod/thoughts';
+        // Using your NEW API Gateway (q2tbsk1xa3)
+        const API_URL = 'https://q2tbsk1xa3.execute-api.us-east-1.amazonaws.com/prod/thoughts';
 
         function saveThought() {
             const thought = document.getElementById('thoughtText').value;
@@ -45,11 +45,11 @@
             })
             .then(response => response.json())
             .then(data => {
-                showMessage('Thought saved to the cloud!', 'success');
+                showMessage('✅ Thought saved to the cloud!', 'success');
                 document.getElementById('thoughtText').value = '';
             })
             .catch(error => {
-                showMessage('Error: ' + error, 'error');
+                showMessage('❌ Error: ' + error, 'error');
             });
         }
 
