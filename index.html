@@ -43,7 +43,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                showMessage('✅ Thought saved to the cloud!', 'success');
+                showMessage('Thought saved to the cloud!', 'success');
                 document.getElementById('thoughtText').value = '';
             })
             .catch(error => {
@@ -60,3 +60,4 @@
     </script>
 </body>
 </html>
+
