@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sarah's Cloud Thought Pad V2</title>
+    <title>Sarah's Cloud Thought Pad</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; }
         textarea { width: 100%; margin: 10px 0; }
@@ -12,10 +12,9 @@
     </style>
 </head>
 <body>
-    <h1>Welcome to My Cloud Thought Pad V2!</h1>
+    <h1>Welcome to My Cloud Thought Pad People!</h1>
     <p>This is running on <strong>Amazon S3 + Lambda + API Gateway + DynamoDB</strong> - completely serverless!</p>
     
-    <!-- V1: Save Thoughts -->
     <div>
         <h3>Add a Thought:</h3>
         <textarea id="thoughtText" rows="4" cols="50" placeholder="What's on your mind?"></textarea>
@@ -25,28 +24,9 @@
 
     <div id="message"></div>
 
-    <!-- =============================== -->
-    <!-- V2: FILE UPLOAD FEATURE (NEW!) -->
-    <!-- =============================== -->
-    
-    <div style="margin-top: 40px; padding: 20px; background: #f0f8ff; border-radius: 10px; border-left: 4px solid #0073bb;">
-        <h3 style="color: #0073bb;"> V2: Attach Files to Your Thoughts!</h3>
-        <p style="color: #666; font-size: 14px;">Powered by S3 Presigned URLs + Lambda + API Gateway</p>
-        
-        <input type="file" id="fileInput" style="margin: 10px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
-        <button onclick="uploadAttachment()" style="background: #28a745; margin-bottom: 10px;">Upload Attachment</button>
-        
-        <div id="uploadStatus" style="margin-top: 10px; padding: 10px; border-radius: 4px; background: #fff; min-height: 20px;"></div>
-    </div>
-
     <script>
-        // ==================== CONFIGURATION ====================
-        // ⚠️ BOTH URLs use the SAME API ID but DIFFERENT paths
-        const THOUGHTS_API = 'https://n02zwwj3l2.execute-api.us-east-1.amazonaws.com/prod/thoughts';
-        const UPLOAD_API = 'https://n02zwwj3l2.execute-api.us-east-1.amazonaws.com/prod/upload';
-        // ======================================================
+        const API_URL = 'https://n02zwwj3l2.execute-api.us-east-1.amazonaws.com/prod/thoughts';
 
-        // ==================== V1: SAVE THOUGHT ====================
         function saveThought() {
             const thought = document.getElementById('thoughtText').value;
             const messageDiv = document.getElementById('message');
@@ -56,18 +36,18 @@
                 return;
             }
 
-            fetch(THOUGHTS_API, {
+            fetch(API_URL, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ thought: thought })
             })
             .then(response => response.json())
             .then(data => {
-                showMessage('Thought saved to the cloud!', 'success');
+                showMessage('✅ Thought saved to the cloud!', 'success');
                 document.getElementById('thoughtText').value = '';
             })
             .catch(error => {
-                showMessage(' Error saving thought: ' + error, 'error');
+                showMessage('Error: ' + error, 'error');
             });
         }
 
@@ -77,76 +57,6 @@
             messageDiv.className = type;
             messageDiv.style.display = 'block';
         }
-
-        // ==================== V2: UPLOAD FILE ====================
-        async function uploadAttachment() {
-            const fileInput = document.getElementById('fileInput');
-            const statusDiv = document.getElementById('uploadStatus');
-            const file = fileInput.files[0];
-            
-            if (!file) {
-                statusDiv.innerHTML = '<span style="color: #ff9800;"> Please select a file first!</span>';
-                return;
-            }
-            
-            // 5MB limit for Free Tier safety
-            if (file.size > 5 * 1024 * 1024) {
-                statusDiv.innerHTML = '<span style="color: #dc3545;"> File too large (max 5MB)</span>';
-                return;
-            }
-            
-            statusDiv.innerHTML = '<span style="color: #0073bb;">⏳ Generating secure upload link...</span>';
-            
-            try {
-                // 1. Get presigned URL from Lambda
-                const response = await fetch(UPLOAD_API, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        fileName: file.name,
-                        fileType: file.type
-                    })
-                });
-                
-                if (!response.ok) throw new Error(`API error: ${response.status}`);
-                
-                const data = await response.json();
-                const { uploadUrl, fileKey } = data;
-                
-                statusDiv.innerHTML = '<span style="color: #0073bb;">⏳ Uploading to S3...</span>';
-                
-                // 2. Upload directly to S3
-                const uploadResponse = await fetch(uploadUrl, {
-                    method: 'PUT',
-                    body: file,
-                    headers: {'Content-Type': file.type}
-                });
-                
-                if (uploadResponse.ok) {
-                    statusDiv.innerHTML = `<span style="color: #28a745;">
-                         <strong>File uploaded!</strong><br>
-                        • File: ${file.name}<br>
-                        • Size: ${(file.size/1024).toFixed(2)} KB<br>
-                        • S3 Key: ${fileKey.split('/')[1]}
-                    </span>`;
-                    
-                    // Auto-add file reference to thought
-                    const thoughtText = document.getElementById('thoughtText');
-                    thoughtText.value += `\n[ Attachment: ${file.name}]`;
-                    
-                    // Clear file input
-                    fileInput.value = '';
-                    
-                } else {
-                    statusDiv.innerHTML = '<span style="color: #dc3545;"> S3 upload failed</span>';
-                }
-                
-            } catch (error) {
-                console.error('Upload error:', error);
-                statusDiv.innerHTML = `<span style="color: #dc3545;"> Error: ${error.message}</span>`;
-            }
-        }
     </script>
 </body>
 </html>
-
