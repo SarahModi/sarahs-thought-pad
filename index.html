@@ -30,15 +30,12 @@
     <!-- =============================== -->
     
     <div style="margin-top: 40px; padding: 20px; background: #f0f8ff; border-radius: 10px; border-left: 4px solid #0073bb;">
-        <h3 style="color: #0073bb;">📎 V2: Attach Files to Your Thoughts!</h3>
+        <h3 style="color: #0073bb;"> V2: Attach Files to Your Thoughts!</h3>
         <p style="color: #666; font-size: 14px;">Powered by S3 Presigned URLs + Lambda + API Gateway</p>
         
         <input type="file" id="fileInput" style="margin: 10px 0; padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
         <button onclick="uploadAttachment()" style="background: #28a745; margin-bottom: 10px;">Upload Attachment</button>
         
-        <p style="font-size: 12px; color: #888;">
-            <strong>Tech behind this:</strong> File → API Gateway → Lambda → S3 Presigned URL → Direct S3 Upload
-        </p>
         <div id="uploadStatus" style="margin-top: 10px; padding: 10px; border-radius: 4px; background: #fff; min-height: 20px;"></div>
     </div>
 
@@ -66,11 +63,11 @@
             })
             .then(response => response.json())
             .then(data => {
-                showMessage('✅ Thought saved to the cloud!', 'success');
+                showMessage('Thought saved to the cloud!', 'success');
                 document.getElementById('thoughtText').value = '';
             })
             .catch(error => {
-                showMessage('❌ Error saving thought: ' + error, 'error');
+                showMessage(' Error saving thought: ' + error, 'error');
             });
         }
 
@@ -88,13 +85,13 @@
             const file = fileInput.files[0];
             
             if (!file) {
-                statusDiv.innerHTML = '<span style="color: #ff9800;">⚠️ Please select a file first!</span>';
+                statusDiv.innerHTML = '<span style="color: #ff9800;"> Please select a file first!</span>';
                 return;
             }
             
             // 5MB limit for Free Tier safety
             if (file.size > 5 * 1024 * 1024) {
-                statusDiv.innerHTML = '<span style="color: #dc3545;">❌ File too large (max 5MB)</span>';
+                statusDiv.innerHTML = '<span style="color: #dc3545;"> File too large (max 5MB)</span>';
                 return;
             }
             
@@ -127,7 +124,7 @@
                 
                 if (uploadResponse.ok) {
                     statusDiv.innerHTML = `<span style="color: #28a745;">
-                        ✅ <strong>File uploaded!</strong><br>
+                         <strong>File uploaded!</strong><br>
                         • File: ${file.name}<br>
                         • Size: ${(file.size/1024).toFixed(2)} KB<br>
                         • S3 Key: ${fileKey.split('/')[1]}
@@ -135,20 +132,21 @@
                     
                     // Auto-add file reference to thought
                     const thoughtText = document.getElementById('thoughtText');
-                    thoughtText.value += `\n[📎 Attachment: ${file.name}]`;
+                    thoughtText.value += `\n[ Attachment: ${file.name}]`;
                     
                     // Clear file input
                     fileInput.value = '';
                     
                 } else {
-                    statusDiv.innerHTML = '<span style="color: #dc3545;">❌ S3 upload failed</span>';
+                    statusDiv.innerHTML = '<span style="color: #dc3545;"> S3 upload failed</span>';
                 }
                 
             } catch (error) {
                 console.error('Upload error:', error);
-                statusDiv.innerHTML = `<span style="color: #dc3545;">❌ Error: ${error.message}</span>`;
+                statusDiv.innerHTML = `<span style="color: #dc3545;"> Error: ${error.message}</span>`;
             }
         }
     </script>
 </body>
 </html>
+
