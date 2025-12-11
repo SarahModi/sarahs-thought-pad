@@ -586,10 +586,10 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
                 thoughtsCountEl.textContent = thoughtsSavedToday;
                 
                 // Success message
-                let successMsg = '✅ Successfully saved to cloud!<br><br>';
-                if (thought) successMsg += `💭 <strong>Thought:</strong> ${thought.substring(0, 50)}${thought.length > 50 ? '...' : ''}<br>`;
-                if (file) successMsg += `📎 <strong>Attachment:</strong> ${file.name}<br>`;
-                successMsg += `📍 <strong>Location:</strong> AWS S3 bucket`;
+                let successMsg = 'Successfully saved to cloud!\n\n';
+                if (thought) successMsg += `• Thought: ${thought.substring(0, 50)}${thought.length > 50 ? '...' : ''}\n`;
+                if (file) successMsg += `• Attachment: ${file.name}\n`;
+                successMsg += `• Location: AWS S3 bucket`;
                 
                 showStatus('success', 'Saved Successfully!', successMsg, thoughtId);
                 
@@ -637,7 +637,7 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
             }
 
             statusTitle.textContent = title;
-            statusMessage.textContent = message;
+            statusMessage.innerHTML = message;
             
             if (thoughtId) {
                 thoughtIdDisplay.innerHTML = `Thought ID: ${thoughtId}`;
@@ -674,6 +674,7 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
     </script>
 </body>
 </html>
+
 
 
 
