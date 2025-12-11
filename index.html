@@ -353,7 +353,32 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
                 <div class="char-count">
                     <span id="charCount">0</span>/500 characters
                 </div>
+                            </div>
+
+            <!-- FILE ATTACHMENT SECTION - ADD THIS -->
+            <div class="input-container" style="margin-top: 25px;">
+                <label class="input-label">
+                    <i class="fas fa-paperclip"></i> Add Photo/File (Optional)
+                </label>
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <input type="file" 
+                           id="fileAttachment" 
+                           accept="image/*,.pdf,.txt"
+                           style="flex: 1; padding: 12px; border: 2px dashed #fed7aa; 
+                                  border-radius: 12px; background: white; font-size: 1rem;">
+                    <button type="button" 
+                            onclick="clearFile()"
+                            style="padding: 10px 20px; background: #fee2e2; color: #991b1b; 
+                                   border: none; border-radius: 10px; cursor: pointer;">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
+                </div>
+                <div id="fileNameDisplay" style="margin-top: 10px; font-size: 0.95rem; 
+                      color: var(--sunset-dark); font-style: italic; min-height: 24px;">
+                    <i class="fas fa-cloud-upload-alt"></i> No file selected
+                </div>
             </div>
+            <!-- END FILE ATTACHMENT SECTION -->
 
             <button class="save-button" id="saveButton" onclick="saveThought()">
                 <i class="fas fa-cloud-upload-alt"></i>
@@ -371,16 +396,16 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
                 </div>
             </div>
 
-            <div class="features">
+                        <div class="features">
                 <div class="feature">
                     <i class="fas fa-bolt"></i>
                     <h3>Instant Save</h3>
                     <p>Thoughts saved to AWS DynamoDB in milliseconds</p>
                 </div>
                 <div class="feature">
-                    <i class="fas fa-globe-americas"></i>
-                    <h3>Global Access</h3>
-                    <p>Access your thoughts from anywhere via CloudFront CDN</p>
+                    <i class="fas fa-paperclip"></i>  <!-- Changed icon -->
+                    <h3>File Attachments</h3>  <!-- Changed title -->
+                    <p>Add photos/files that save directly to AWS S3</p>  <!-- Changed text -->
                 </div>
                 <div class="feature">
                     <i class="fas fa-shield-alt"></i>
@@ -388,6 +413,7 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
                     <p>Protected by AWS IAM roles and security policies</p>
                 </div>
             </div>
+          
         </div>
 
         <div class="thought-counter">
@@ -427,6 +453,31 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
             }
         });
 
+                // File attachment functions - ADD THIS
+        function clearFile() {
+            document.getElementById('fileAttachment').value = '';
+            updateFileName();
+        }
+        
+        function updateFileName() {
+            const fileInput = document.getElementById('fileAttachment');
+            const display = document.getElementById('fileNameDisplay');
+            
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileSize = (file.size / 1024).toFixed(1); // KB
+                display.innerHTML = `<i class="fas fa-file"></i> Selected: ${file.name} (${fileSize} KB)`;
+            } else {
+                display.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> No file selected';
+            }
+        }
+        
+        // Attach event listener
+        document.getElementById('fileAttachment').addEventListener('change', updateFileName);
+        // END FILE ATTACHMENT FUNCTIONS
+
+        // Enter key to save (Shift+Enter for new line)
+
         // Enter key to save (Shift+Enter for new line)
         document.getElementById('thoughtInput').addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -435,112 +486,134 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
             }
         });
 
-       async function saveThought() {
-    const thoughtInput = document.getElementById('thoughtInput');
-    const thought = thoughtInput.value.trim();
-    const button = document.getElementById('saveButton');
-    const buttonText = document.getElementById('buttonText');
-    const statusCard = document.getElementById('statusCard');
-    const statusIcon = document.getElementById('statusIcon');
-    const statusTitle = document.getElementById('statusTitle');
-    const statusMessage = document.getElementById('statusMessage');
-    const thoughtIdDisplay = document.getElementById('thoughtIdDisplay');
-    const thoughtsCountEl = document.getElementById('thoughtsCount');
-
-    // Reset status
-    statusCard.className = 'status-card';
-    thoughtIdDisplay.innerHTML = '';
-
-    // FILE ATTACHMENT FEATURE
-    // For now, we'll simulate a file or use thought as text file
-    const hasAttachment = false; // Change to true when adding file input
-    
-    if (!thought && !hasAttachment) {
-        showStatus('error', 'Empty Thought', 'Please write something or add an attachment!');
-        thoughtInput.focus();
-        return;
-    }
-
-    // Show loading state
-    button.disabled = true;
-    buttonText.innerHTML = '<div class="spinner"></div> Saving...';
-    
-    showStatus('loading', 'Generating Upload Link', 'Getting secure S3 upload URL from AWS Lambda...');
-
-    try {
-        // 🚨 FIXED: No "/thoughts" - just API_URL
-        // Send request to get presigned URL for a text file
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({ 
-                fileExtension: 'txt',
-                contentType: 'text/plain' 
-            })
-        });
-
-        const result = await response.json();
-
-        if (response.ok) {
-            // Step 1: Got presigned URL, now upload the thought as a text file
-            showStatus('loading', 'Uploading to S3', 'Saving your thought to AWS S3...');
+              async function saveThought() {
+            const thoughtInput = document.getElementById('thoughtInput');
+            const thought = thoughtInput.value.trim();
+            const fileInput = document.getElementById('fileAttachment');
+            const file = fileInput.files[0];
             
-            // Create a text blob from the thought
-            const thoughtBlob = new Blob([thought], { type: 'text/plain' });
+            const button = document.getElementById('saveButton');
+            const buttonText = document.getElementById('buttonText');
+            const statusCard = document.getElementById('statusCard');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusTitle = document.getElementById('statusTitle');
+            const statusMessage = document.getElementById('statusMessage');
+            const thoughtIdDisplay = document.getElementById('thoughtIdDisplay');
+            const thoughtsCountEl = document.getElementById('thoughtsCount');
+
+            // Reset status
+            statusCard.className = 'status-card';
+            thoughtIdDisplay.innerHTML = '';
             
-            // Upload directly to S3 using presigned URL
-            const uploadResponse = await fetch(result.uploadUrl, {
-                method: 'PUT',
-                body: thoughtBlob,
-                headers: { 
-                    'Content-Type': 'text/plain'
+            // Check if we have something to save
+            if (!thought && !file) {
+                showStatus('error', 'Nothing to Save', 'Please write a thought or select a file!');
+                thoughtInput.focus();
+                return;
+            }
+
+            // Show loading
+            button.disabled = true;
+            buttonText.innerHTML = '<div class="spinner"></div> Saving...';
+            
+            // Status message
+            let statusMsg = 'Starting upload...';
+            if (thought && file) {
+                statusMsg = `Saving thought and ${file.name}...`;
+            } else if (file) {
+                statusMsg = `Uploading ${file.name}...`;
+            } else {
+                statusMsg = 'Saving thought...';
+            }
+            
+            showStatus('loading', 'Processing', statusMsg);
+
+            try {
+                // Generate a unique ID for this thought session
+                const thoughtId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+                
+                // STEP 1: Save thought text (if any)
+                if (thought) {
+                    showStatus('loading', 'Saving Thought', 'Uploading text to S3...');
+                    
+                    // Get URL for text file
+                    const textResponse = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ 
+                            fileExtension: 'txt',
+                            contentType: 'text/plain'
+                        })
+                    });
+                    
+                    const textResult = await textResponse.json();
+                    
+                    // Upload thought text
+                    const thoughtBlob = new Blob([thought], { type: 'text/plain' });
+                    await fetch(textResult.uploadUrl, {
+                        method: 'PUT',
+                        body: thoughtBlob,
+                        headers: { 'Content-Type': 'text/plain' }
+                    });
                 }
-            });
 
-            if (uploadResponse.ok) {
-                // Success!
+                // STEP 2: Save attachment (if any)
+                if (file) {
+                    showStatus('loading', 'Saving Attachment', `Uploading ${file.name}...`);
+                    
+                    // Get URL for actual file
+                    const fileResponse = await fetch(API_URL, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ 
+                            fileExtension: file.name.split('.').pop(),
+                            contentType: file.type || 'application/octet-stream'
+                        })
+                    });
+                    
+                    const fileResult = await fileResponse.json();
+                    
+                    // Upload actual file
+                    await fetch(fileResult.uploadUrl, {
+                        method: 'PUT',
+                        body: file,
+                        headers: { 'Content-Type': file.type }
+                    });
+                }
+
+                // SUCCESS! 🎉
                 thoughtsSavedToday++;
                 thoughtsCountEl.textContent = thoughtsSavedToday;
                 
-                showStatus('success', 
-                    'Thought Saved to Cloud!', 
-                    'Your thought is now securely stored in AWS S3.',
-                    result.fileName
-                );
+                // Success message
+                let successMsg = '✅ Successfully saved to cloud!<br><br>';
+                if (thought) successMsg += `💭 <strong>Thought:</strong> ${thought.substring(0, 50)}${thought.length > 50 ? '...' : ''}<br>`;
+                if (file) successMsg += `📎 <strong>Attachment:</strong> ${file.name}<br>`;
+                successMsg += `📍 <strong>Location:</strong> AWS S3 bucket`;
                 
-                // Clear input
+                showStatus('success', 'Saved Successfully!', successMsg, thoughtId);
+                
+                // Clear form
                 thoughtInput.value = '';
                 document.getElementById('charCount').textContent = '0';
+                fileInput.value = '';
+                updateFileName();
                 
-                // Add celebration effect
+                // Celebration effect
                 button.style.background = 'linear-gradient(to right, #10b981, #34d399)';
                 setTimeout(() => {
                     button.style.background = 'linear-gradient(to right, #f59e0b, #f97316)';
                 }, 1000);
-                
-            } else {
-                showStatus('error', 'Upload Failed', 'Could not upload to S3. Check CORS settings.');
+
+            } catch (error) {
+                showStatus('error', 'Upload Failed', 
+                    `Error: ${error.message}<br>Check browser console for details.`);
+                console.error('Upload error:', error);
+            } finally {
+                button.disabled = false;
+                buttonText.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Save to Sunset Cloud';
             }
-
-        } else {
-            // Error from API
-            showStatus('error', 'API Error', result.error || 'Unknown error occurred');
         }
-
-    } catch (error) {
-        // Network error
-        showStatus('error', 'Connection Error', 
-            `Failed to connect: ${error.message}. Check your API URL: ${API_URL}`);
-        console.error('Error details:', error);
-    } finally {
-        // Reset button
-        button.disabled = false;
-        buttonText.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Save to Sunset Cloud';
-    }
-}
 
         function showStatus(type, title, message, thoughtId = null) {
             const statusCard = document.getElementById('statusCard');
@@ -601,6 +674,7 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
     </script>
 </body>
 </html>
+
 
 
 
