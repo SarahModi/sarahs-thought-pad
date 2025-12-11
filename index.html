@@ -435,82 +435,112 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
             }
         });
 
-        async function saveThought() {
-            const thoughtInput = document.getElementById('thoughtInput');
-            const thought = thoughtInput.value.trim();
-            const button = document.getElementById('saveButton');
-            const buttonText = document.getElementById('buttonText');
-            const statusCard = document.getElementById('statusCard');
-            const statusIcon = document.getElementById('statusIcon');
-            const statusTitle = document.getElementById('statusTitle');
-            const statusMessage = document.getElementById('statusMessage');
-            const thoughtIdDisplay = document.getElementById('thoughtIdDisplay');
-            const thoughtsCountEl = document.getElementById('thoughtsCount');
+       async function saveThought() {
+    const thoughtInput = document.getElementById('thoughtInput');
+    const thought = thoughtInput.value.trim();
+    const button = document.getElementById('saveButton');
+    const buttonText = document.getElementById('buttonText');
+    const statusCard = document.getElementById('statusCard');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusTitle = document.getElementById('statusTitle');
+    const statusMessage = document.getElementById('statusMessage');
+    const thoughtIdDisplay = document.getElementById('thoughtIdDisplay');
+    const thoughtsCountEl = document.getElementById('thoughtsCount');
 
-            // Reset status
-            statusCard.className = 'status-card';
-            thoughtIdDisplay.innerHTML = '';
+    // Reset status
+    statusCard.className = 'status-card';
+    thoughtIdDisplay.innerHTML = '';
 
-            if (!thought) {
-                showStatus('error', 'Empty Thought', 'Please write something before saving!');
-                thoughtInput.focus();
-                return;
-            }
+    // FILE ATTACHMENT FEATURE
+    // For now, we'll simulate a file or use thought as text file
+    const hasAttachment = false; // Change to true when adding file input
+    
+    if (!thought && !hasAttachment) {
+        showStatus('error', 'Empty Thought', 'Please write something or add an attachment!');
+        thoughtInput.focus();
+        return;
+    }
 
-            // Show loading state
-            button.disabled = true;
-            buttonText.innerHTML = '<div class="spinner"></div> Saving...';
+    // Show loading state
+    button.disabled = true;
+    buttonText.innerHTML = '<div class="spinner"></div> Saving...';
+    
+    showStatus('loading', 'Generating Upload Link', 'Getting secure S3 upload URL from AWS Lambda...');
+
+    try {
+        // 🚨 FIXED: No "/thoughts" - just API_URL
+        // Send request to get presigned URL for a text file
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ 
+                fileExtension: 'txt',
+                contentType: 'text/plain' 
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // Step 1: Got presigned URL, now upload the thought as a text file
+            showStatus('loading', 'Uploading to S3', 'Saving your thought to AWS S3...');
             
-            showStatus('loading', 'Saving to Cloud', 'Your thought is being saved to AWS DynamoDB...');
-
-            try {
-                const response = await fetch(`${API_URL}/thoughts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ thought: thought })
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    // Success
-                    thoughtsSavedToday++;
-                    thoughtsCountEl.textContent = thoughtsSavedToday;
-                    
-                    showStatus('success', 
-                        'Thought Saved Successfully!', 
-                        'Your thought is now safely stored in AWS Cloud.',
-                        result.id
-                    );
-                    
-                    // Clear input
-                    thoughtInput.value = '';
-                    document.getElementById('charCount').textContent = '0';
-                    
-                    // Add celebration effect
-                    button.style.background = 'linear-gradient(to right, #10b981, #34d399)';
-                    setTimeout(() => {
-                        button.style.background = 'linear-gradient(to right, #f59e0b, #f97316)';
-                    }, 1000);
-                    
-                } else {
-                    // Error from API
-                    showStatus('error', 'Save Failed', result.error || 'Unknown error occurred');
+            // Create a text blob from the thought
+            const thoughtBlob = new Blob([thought], { type: 'text/plain' });
+            
+            // Upload directly to S3 using presigned URL
+            const uploadResponse = await fetch(result.uploadUrl, {
+                method: 'PUT',
+                body: thoughtBlob,
+                headers: { 
+                    'Content-Type': 'text/plain'
                 }
+            });
 
-            } catch (error) {
-                // Network error
-                showStatus('error', 'Connection Error', 
-                    `Failed to connect: ${error.message}. Check your API URL.`);
-                console.error('API URL should be:', API_URL);
-            } finally {
-                // Reset button
-                button.disabled = false;
-                buttonText.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Save to Sunset Cloud';
+            if (uploadResponse.ok) {
+                // Success!
+                thoughtsSavedToday++;
+                thoughtsCountEl.textContent = thoughtsSavedToday;
+                
+                showStatus('success', 
+                    'Thought Saved to Cloud!', 
+                    'Your thought is now securely stored in AWS S3.',
+                    result.fileName
+                );
+                
+                // Clear input
+                thoughtInput.value = '';
+                document.getElementById('charCount').textContent = '0';
+                
+                // Add celebration effect
+                button.style.background = 'linear-gradient(to right, #10b981, #34d399)';
+                setTimeout(() => {
+                    button.style.background = 'linear-gradient(to right, #f59e0b, #f97316)';
+                }, 1000);
+                
+            } else {
+                showStatus('error', 'Upload Failed', 'Could not upload to S3. Check CORS settings.');
             }
+
+        } else {
+            // Error from API
+            showStatus('error', 'API Error', result.error || 'Unknown error occurred');
         }
+
+    } catch (error) {
+        // Network error
+        showStatus('error', 'Connection Error', 
+            `Failed to connect: ${error.message}. Check your API URL: ${API_URL}`);
+        console.error('Error details:', error);
+    } finally {
+        // Reset button
+        button.disabled = false;
+        buttonText.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> Save to Sunset Cloud';
+    }
+}
 
         function showStatus(type, title, message, thoughtId = null) {
             const statusCard = document.getElementById('statusCard');
@@ -571,5 +601,6 @@ You can write anything - ideas, reminders, inspirations, or just what you're gra
     </script>
 </body>
 </html>
+
 
 
